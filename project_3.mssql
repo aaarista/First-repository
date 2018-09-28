@@ -1,0 +1,81 @@
+/*
+  tb.sql
+*/
+
+
+-- drop schema if one exists. 
+
+
+DROP SCHEMA IF EXISTS tb;
+
+
+-- creates a new schema. 
+
+
+CREATE SCHEMA tb;
+
+
+-- Uses tb schema throughout the rest of the script. 
+
+
+USE tb;
+
+
+-- Creates new table tb. 
+
+
+CREATE TABLE tb 
+(
+  country varchar(100) NOT NULL,
+  year int NOT NULL,
+  sex varchar(6) NOT NULL,
+  child int NULL,
+  adult int NULL,
+  elderly int NULL
+);
+
+
+
+
+-- Load a csv file into the tb table. 
+
+
+LOAD DATA LOCAL INFILE '/Users/ThomasKenneally/Desktop/tb (1).csv'  
+INTO TABLE tb
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+(country, year, sex, @child, @adult, @elderly)
+SET
+child = nullif(@child,-1),
+adult = nullif(@adult,-1),
+elderly = nullif(@elderly,-1)
+;
+
+
+-- Creates a table population. 
+
+
+CREATE TABLE population (country varchar (100), year int, population int);
+
+
+-- Loads csv data into the population table. 
+
+
+LOAD DATA LOCAL INFILE '/Users/ThomasKenneally/Desktop/population (1) (1).csv'
+INTO TABLE population
+FIELDS TERMINATED BY ',' 
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
+
+
+-- Joins the tables tb ad population and calculates for rate in the rate column. 
+
+
+SELECT tb.country, tb.year, (sum(coalesce((child), 0)) + sum(coalesce((adult), 0)) + sum(coalesce((elderly), 0))) / (sum(coalesce((population), 0))) as 'rate'
+FROM tb.tb, tb.population
+WHERE tb.country = population.country and tb.year = population.year 
+GROUP BY country, year
+ORDER BY country asc, year asc;
+
